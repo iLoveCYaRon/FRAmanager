@@ -1,9 +1,15 @@
 package com.example.zmx.facerecognitionattendancemanager;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -12,30 +18,50 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
+    final int TRANSMIT = 0;
+    final int REGISTER = 1;
+
     private DrawerLayout drawerLayout;
+
+    private static final String CURRENT_FRAGMENT = "STATE_FRAGMENT_SHOW";
+
+    private FragmentManager fragmentManager;
+
+    private Fragment currentFragment = new Fragment();
+    private List<Fragment> fragments = new ArrayList<>();
+
+    private FloatingActionButton floatingActionButton;
+
+    private int currentIndex = 0;
+
+    private IntentFilter intentFilter;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        replaceFragment(new HistoryFragment());
+        fragmentManager = getSupportFragmentManager();      //初始化fragmentManager
 
-        //toolbar
+
+
+//        toolbar
         final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-//            actionBar.setHomeButtonEnabled(true);
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeAsUpIndicator(R.mipmap.toolbar_menu);
         }
@@ -43,8 +69,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //drawer_layout抽屉布局
         drawerLayout = findViewById(R.id.drawer_layout);
         final NavigationView navView = findViewById(R.id.nav_view);
-        //设置抽屉中单项点击事件
+
 //        navView.setCheckedItem(R.id.nav_history);           //设置被选中的项目
+        //设置抽屉中单项点击事件
         navView.setNavigationItemSelectedListener(new NavigationView.
                 OnNavigationItemSelectedListener() {
             @Override
@@ -53,39 +80,117 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //根据id判定点击的按钮
                 switch (item.getItemId()) {
                     case R.id.nav_history:
-                        replaceFragment(new HistoryFragment());
-                        Snackbar.make(drawerLayout, "Data deleted", Snackbar.LENGTH_LONG)
-                                .setAction("撤销", new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        Toast.makeText(MainActivity.this, "Data restored",
-                                                Toast.LENGTH_SHORT).show();
-                                    }
-                                }).show();
+                        floatingActionButton.setImageResource(R.mipmap.fab_signature);
+                        currentIndex = 0;
+                        break;
+
+                    case R.id.nav_stu_list:
+                        floatingActionButton.setImageResource(R.mipmap.fab_register);
+                        currentIndex = 1;
+                        break;
+
+                    case R.id.nav_time_set:
+                        currentIndex = 2;
                         break;
 
                     default:
                         break;
                 }
+
+                showFragment();
+
                 return true;
             }
         });
 
 
         //FloatingActionButton悬浮按钮
-        FloatingActionButton flaSignature = findViewById(R.id.fab_signature);
-        flaSignature.setOnClickListener(this);
+        floatingActionButton = findViewById(R.id.fab_signature);
+        floatingActionButton.setOnClickListener(this);
 
+
+        if (savedInstanceState != null) {       //内存重启时调用
+
+            //获取“内存重启”时保存的索引下标
+            currentIndex = savedInstanceState.getInt(CURRENT_FRAGMENT, 0);
+
+            //注意，添加顺序要跟下面添加的顺序一样！！！！
+            fragments.removeAll(fragments);
+            fragments.add(fragmentManager.findFragmentByTag(0 + ""));
+            fragments.add(fragmentManager.findFragmentByTag(1 + ""));
+            fragments.add(fragmentManager.findFragmentByTag(2 + ""));
+
+            //恢复fragment页面
+            restoreFragment();
+
+        } else {      //正常启动时调用
+
+            fragments.add(new HistoryFragment());
+            fragments.add(new StuListFragment());
+            fragments.add(new TimeSettingFragment());
+
+            showFragment();
+        }
     }
 
+//以下是fragment切换涉及到的逻辑
 
-    private void replaceFragment(Fragment fragment) {
-        FragmentManager fragmentManager = getSupportFragmentManager();
+    /**
+     * 使用show() hide()切换页面
+     * 显示fragment
+     */
+    private void showFragment() {
+
         FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.fragment, fragment);
-        transaction.addToBackStack(null);       //按返回后返回到上一个Fragment
+
+        if (!fragments.get(currentIndex).isAdded()) {      //之前没有被添加过
+            transaction
+                    .hide(currentFragment)
+                    .add(R.id.fragment, fragments.get(currentIndex), "" + currentIndex);  //第三个参数为添加当前的fragment时绑定一个tag
+        } else {
+            transaction
+                    .hide(currentFragment)
+                    .show(fragments.get(currentIndex));
+        }
+
+        currentFragment = fragments.get(currentIndex);
+
         transaction.commit();
     }
+
+
+    /**
+     * 恢复fragment
+     */
+    private void restoreFragment() {
+
+        FragmentTransaction mBeginTransaction = fragmentManager.beginTransaction();
+
+
+        for (int i = 0; i < fragments.size(); i++) {
+
+            if (i == currentIndex) {
+                mBeginTransaction.show(fragments.get(i));
+            } else {
+                mBeginTransaction.hide(fragments.get(i));
+            }
+
+        }
+
+        mBeginTransaction.commit();
+
+        //把当前显示的fragment记录下来
+        currentFragment = fragments.get(currentIndex);
+
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        //“内存重启”时保存当前的fragment名字
+        outState.putInt(CURRENT_FRAGMENT, currentIndex);
+        super.onSaveInstanceState(outState);
+    }
+
 
     //按钮响应
     @Override
@@ -93,6 +198,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()) {
             //点击扫脸按钮的功能
             case R.id.fab_signature:
+                Intent takePictureIntent = new Intent(
+                        MainActivity.this, TakePhotoActivity.class);
+
+                switch (currentIndex) {
+                    case 0:
+                        takePictureIntent.putExtra("request_flag", TRANSMIT);
+                        break;
+                    case 1:
+                        takePictureIntent.putExtra("request_flag", REGISTER);
+                    default:
+                        break;
+                }
+
+                startActivity(takePictureIntent);
 
                 break;
             default:
@@ -124,6 +243,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return true;
     }
 
+
+
     //重写返回键的方法，按返回键后检查抽屉栏是否打开，若打开，关闭它；若未打开，正常的返回即可。
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
@@ -132,4 +253,5 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             super.onBackPressed();
         }
     }
+
 }

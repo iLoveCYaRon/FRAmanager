@@ -14,21 +14,16 @@
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="wrap_content"
             android:background="?attr/colorPrimary"
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
-        <FrameLayout
+        <android.support.design.widget.CoordinatorLayout
             android:id="@+id/fragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <!--<fragment-->
-                <!--android:id="@+id/fragment"-->
-                <!--android:name="com.example.zmx.facerecognitionattendancemanager.HistoryFragment"-->
-                <!--android:layout_width="match_parent"-->
-                <!--android:layout_height="match_parent" />-->
 
             <android.support.design.widget.FloatingActionButton
                 android:id="@+id/fab_signature"
@@ -39,7 +34,7 @@
                 android:src="@mipmap/fab_signature"
                 app:elevation="8dp" />
 
-        </FrameLayout>
+        </android.support.design.widget.CoordinatorLayout>
 
     </LinearLayout>
 

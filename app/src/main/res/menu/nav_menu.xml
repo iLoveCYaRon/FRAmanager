@@ -7,7 +7,7 @@
             android:title="@string/nav_history"/>
 
         <item
-            android:id="@+id/nav_register"
+            android:id="@+id/nav_stu_list"
             android:icon="@drawable/nav_user_list"
             android:title="@string/nav_student_list"/>
 
@@ -15,6 +15,5 @@
             android:id="@+id/nav_time_set"
             android:icon="@drawable/nav_time_setting"
             android:title="@string/nav_time_set"/>
-        <!--todo 是否添加主页？-->
     </group>
 </menu>
