@@ -34,6 +34,13 @@
                 android:src="@mipmap/fab_signature"
                 app:elevation="8dp" />
 
+            <Button
+                android:id="@+id/activeBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="activeEngine"
+                android:text="激活人脸引擎" />
+
         </android.support.design.widget.CoordinatorLayout>
 
     </LinearLayout>

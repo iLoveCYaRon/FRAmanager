@@ -1,5 +1,6 @@
 package com.example.zmx.facerecognitionattendancemanager;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +11,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -18,16 +20,36 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.arcsoft.face.ActiveFileInfo;
+import com.arcsoft.face.ErrorInfo;
+import com.arcsoft.face.FaceEngine;
+import com.arcsoft.face.enums.RuntimeABI;
+import com.example.zmx.facerecognitionattendancemanager.common.Constants;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
+public class MainActivity extends BaseActivity implements View.OnClickListener {
+    private static final String TAG = "MainActivity";
+    // 在线激活所需的权限
+    private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
+    private static final String[] NEEDED_PERMISSIONS = new String[]{
+            Manifest.permission.READ_PHONE_STATE
+    };
     final int TRANSMIT = 0;
     final int REGISTER = 1;
 
@@ -47,7 +69,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private IntentFilter intentFilter;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,7 +78,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 
-//        toolbar
+        //toolbar
         final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
@@ -70,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         drawerLayout = findViewById(R.id.drawer_layout);
         final NavigationView navView = findViewById(R.id.nav_view);
 
-//        navView.setCheckedItem(R.id.nav_history);           //设置被选中的项目
+        //navView.setCheckedItem(R.id.nav_history);           //设置被选中的项目
         //设置抽屉中单项点击事件
         navView.setNavigationItemSelectedListener(new NavigationView.
                 OnNavigationItemSelectedListener() {
@@ -206,6 +227,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         takePictureIntent.putExtra("request_flag", TRANSMIT);
                         break;
                     case 1:
+                        //当目前处于学生列表Fragment时，启动拍照Activity传入一个参数，表示此次拍照为注册人脸
                         takePictureIntent.putExtra("request_flag", REGISTER);
                     default:
                         break;
@@ -254,4 +276,79 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+
+    public void activeEngine(final View view) {
+        if (!checkPermissions(NEEDED_PERMISSIONS)) {
+            ActivityCompat.requestPermissions(this, NEEDED_PERMISSIONS, ACTION_REQUEST_PERMISSIONS);
+            return;
+        }
+        if (view != null) {
+            view.setClickable(false);
+        }
+        Observable.create(new ObservableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(ObservableEmitter<Integer> emitter) {
+                RuntimeABI runtimeABI = FaceEngine.getRuntimeABI();
+                Log.i(TAG, "subscribe: getRuntimeABI() " + runtimeABI);
+
+                long start = System.currentTimeMillis();
+                int activeCode = FaceEngine.activeOnline(MainActivity.this, Constants.APP_ID, Constants.SDK_KEY);
+                Log.i(TAG, "subscribe cost: " + (System.currentTimeMillis() - start));
+                emitter.onNext(activeCode);
+            }
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Integer>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(Integer activeCode) {
+                        if (activeCode == ErrorInfo.MOK) {
+                            showToast("激活成功");
+                        } else if (activeCode == ErrorInfo.MERR_ASF_ALREADY_ACTIVATED) {
+                            showToast("已经激活");
+                        } else {
+                            showToast("激活失败"+activeCode);
+                        }
+
+                        if (view != null) {
+                            view.setClickable(true);
+                        }
+                        ActiveFileInfo activeFileInfo = new ActiveFileInfo();
+                        int res = FaceEngine.getActiveFileInfo(MainActivity.this, activeFileInfo);
+                        if (res == ErrorInfo.MOK) {
+                            Log.i(TAG, activeFileInfo.toString());
+                        }
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        showToast(e.getMessage());
+                        if (view != null) {
+                            view.setClickable(true);
+                        }
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+
+    }
+
+    @Override
+    void afterRequestPermission(int requestCode, boolean isAllGranted) {
+
+    }
+
+    @Override
+    public void onPointerCaptureChanged(boolean hasCapture) {
+
+    }
 }

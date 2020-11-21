@@ -4,9 +4,12 @@ import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
@@ -19,12 +22,19 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.arcsoft.imageutil.ArcSoftImageFormat;
+import com.arcsoft.imageutil.ArcSoftImageUtil;
+import com.arcsoft.imageutil.ArcSoftImageUtilError;
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+import com.example.zmx.facerecognitionattendancemanager.faceserver.FaceServer;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -37,6 +47,11 @@ import okhttp3.Response;
 
 
 public class TakePhotoActivity extends AppCompatActivity implements View.OnClickListener {
+
+    //定义文件存放的目录
+    private static final String ROOT_DIR = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "arcfacedemo";
+    private static final String REGISTER_DIR = ROOT_DIR + File.separator + "register";
+    private static final String REGISTER_FAILED_DIR = ROOT_DIR + File.separator + "failed";
 
     //用于拍照
     private SubsamplingScaleImageView photo;
@@ -51,6 +66,9 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
     final int REGISTER = 1;
 
     private ProgressDialog waitingDialog;
+
+    //处理图像的事务处理器
+    private ExecutorService executorService;
 
     //Handle处理线程返回数据。0代表成功，1代表出错
     @SuppressLint("HandlerLeak")
@@ -102,6 +120,8 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
         FloatingActionButton fab_upload_photo = findViewById(R.id.fab_photo_upload);
         fab_upload_photo.setOnClickListener(this);
 
+        executorService = Executors.newSingleThreadExecutor();
+
         //outputImage用于存储拍照后的图片
         outputImage = new File(getExternalCacheDir(), "face_check_take_photo_image.jpg");
         try {
@@ -119,7 +139,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
         } else {
             imageUri = Uri.fromFile(outputImage);
         }
-        //启动相机程序
+        //使用Intent启动相机程序，在Intent中指定好捕获到的图像的储存位置
         Intent intent_photo = new Intent("android.media.action.IMAGE_CAPTURE");
         intent_photo.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
         startActivityForResult(intent_photo, TAKE_PHOTO);
@@ -155,12 +175,12 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
                 switch (request_flag) {
                     case TRANSMIT:
                         if (photo.hasImage()) {
-                            UploadRequest(null, outputImage);
+                            doRegister();
                         }
 
                         break;
                     case REGISTER:
-                        //若有图片，则提交
+                        //判图片，创建新的人脸数据
                         if (photo.hasImage()) {
                             //新建一个Dialog输入学生姓名（user_id）
                             final EditText editText = new EditText(TakePhotoActivity.this);
@@ -185,6 +205,57 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
         }
     }
 
+
+    private void doRegister() {
+
+        //获取方才捕捉到的图片
+        outputImage = new File(getExternalCacheDir(), "face_check_take_photo_image.jpg");
+
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                Bitmap bitmap = BitmapFactory.decodeFile(outputImage.getAbsolutePath());
+                if (bitmap == null) {
+                    File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
+                    if (!failedFile.getParentFile().exists()) {
+                        failedFile.getParentFile().mkdirs();
+                    }
+                    outputImage.renameTo(failedFile);
+                }
+                bitmap = ArcSoftImageUtil.getAlignedBitmap(bitmap, true);
+                if (bitmap == null) {
+                    File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
+                    if (!failedFile.getParentFile().exists()) {
+                        failedFile.getParentFile().mkdirs();
+                    }
+                    outputImage.renameTo(failedFile);
+
+                }
+                byte[] bgr24 = ArcSoftImageUtil.createImageData(bitmap.getWidth(), bitmap.getHeight(), ArcSoftImageFormat.BGR24);
+                int transformCode = ArcSoftImageUtil.bitmapToImageData(bitmap, bgr24, ArcSoftImageFormat.BGR24);
+                if (transformCode != ArcSoftImageUtilError.CODE_SUCCESS) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            waitingDialog.dismiss();
+                        }
+                    });
+                    return;
+                }
+                boolean success = FaceServer.getInstance().registerBgr24(TakePhotoActivity.this, bgr24, bitmap.getWidth(), bitmap.getHeight(),
+                        outputImage.getName().substring(0, outputImage.getName().lastIndexOf(".")));
+                if (!success) {
+                    File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
+                    if (!failedFile.getParentFile().exists()) {
+                        failedFile.getParentFile().mkdirs();
+                    }
+                    outputImage.renameTo(failedFile);
+                } else {
+                    Log.d("Register", "run: 注册成功");
+                }
+            }
+        });
+    }
 
     //注册上传函数，成功返回1，否则返回0
     private void UploadRequest(String user_id, File user_pictrue) {
