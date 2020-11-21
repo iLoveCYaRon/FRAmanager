@@ -2,7 +2,6 @@ package com.example.zmx.facerecognitionattendancemanager;
 
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -10,13 +9,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.MediaStore;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.content.FileProvider;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+
+import androidx.core.content.FileProvider;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -30,99 +27,60 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import com.example.zmx.facerecognitionattendancemanager.faceserver.FaceServer;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 
 public class TakePhotoActivity extends AppCompatActivity implements View.OnClickListener {
 
     //定义文件存放的目录
-    private static final String ROOT_DIR = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "arcfacedemo";
+    private static final String ROOT_DIR = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "arcface";
     private static final String REGISTER_DIR = ROOT_DIR + File.separator + "register";
     private static final String REGISTER_FAILED_DIR = ROOT_DIR + File.separator + "failed";
 
-    //用于拍照
-    private SubsamplingScaleImageView photo;
-    private Uri imageUri;
-    private File outputImage;
+    //界面控件相关
+    private ProgressDialog waitingDialog;
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.photo)
+    public SubsamplingScaleImageView photo;
 
-    public static final int TAKE_PHOTO = 1;
-
-    //用于判断是register还是transmit
+    //业务逻辑相关
+    //用于判断是register（注册人脸）还是transmit（校验人脸）
     private int request_flag;
     final int TRANSMIT = 0;
     final int REGISTER = 1;
+    public static final int TAKE_PHOTO = 1;
+    //用于拍照
 
-    private ProgressDialog waitingDialog;
-
+    private Uri imageUri;
+    private File outputImage;
     //处理图像的事务处理器
     private ExecutorService executorService;
-
-    //Handle处理线程返回数据。0代表成功，1代表出错
-    @SuppressLint("HandlerLeak")
-    private Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-
-            if(waitingDialog.isShowing()){
-                waitingDialog.dismiss();
-            }
-
-            switch (msg.what) {
-                case 200:
-                    Toast.makeText(TakePhotoActivity.this,
-                            msg.obj.toString(), Toast.LENGTH_SHORT).show();
-                    break;
-                case 408:
-                    //请求超时
-                    Toast.makeText(TakePhotoActivity.this,
-                            msg.obj.toString(), Toast.LENGTH_SHORT).show();
-                    break;
-                default:
-                    Toast.makeText(TakePhotoActivity.this,
-                            "未知错误", Toast.LENGTH_SHORT).show();
-            }
-            finish();
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_take_photo);
+        ButterKnife.bind(this);
 
-        //设置等待dialog
+        //设置等待dialog外观参数
         waitingDialog = new ProgressDialog(TakePhotoActivity.this);
         waitingDialog.setMessage("上传中...");
         waitingDialog.setIndeterminate(true);
         waitingDialog.setCancelable(false);
 
-        //获取request_flag，-1表示错误
+        //从Intent中获取request_flag存到成员变量中
         Intent intent_flag = getIntent();
         request_flag = intent_flag.getIntExtra("request_flag", -1);
 
-        //ImageView photo用于显示拍好的图片
-        photo = findViewById(R.id.photo);
-
-        //提交按钮
-        FloatingActionButton fab_upload_photo = findViewById(R.id.fab_photo_upload);
-        fab_upload_photo.setOnClickListener(this);
-
+        //初始化事务处理器
         executorService = Executors.newSingleThreadExecutor();
 
-        //outputImage用于存储拍照后的图片
+        //初始化外部存储位置用于存储拍摄照片
         outputImage = new File(getExternalCacheDir(), "face_check_take_photo_image.jpg");
         try {
             if (outputImage.exists()) {
@@ -132,6 +90,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         //不同安卓版本不同
         if (Build.VERSION.SDK_INT >= 24) {
             imageUri = FileProvider.getUriForFile(TakePhotoActivity.this,
@@ -139,14 +98,17 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
         } else {
             imageUri = Uri.fromFile(outputImage);
         }
+
         //使用Intent启动相机程序，在Intent中指定好捕获到的图像的储存位置
         Intent intent_photo = new Intent("android.media.action.IMAGE_CAPTURE");
         intent_photo.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
         startActivityForResult(intent_photo, TAKE_PHOTO);
     }
 
+    //重载onActivityResult方法，获得拍照的结果并显示
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case TAKE_PHOTO:
                 switch (resultCode) {
@@ -167,164 +129,79 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.fab_photo_upload:
-
-                waitingDialog.show();                //上传中...等待dialog
-
-                switch (request_flag) {
-                    case TRANSMIT:
-                        if (photo.hasImage()) {
-                            doRegister();
-                        }
-
-                        break;
-                    case REGISTER:
-                        //判图片，创建新的人脸数据
-                        if (photo.hasImage()) {
-                            //新建一个Dialog输入学生姓名（user_id）
-                            final EditText editText = new EditText(TakePhotoActivity.this);
-                            AlertDialog.Builder inputDialog =
-                                    new AlertDialog.Builder(TakePhotoActivity.this);
-                            inputDialog.setTitle("在此输入学生姓名").setView(editText);
-                            inputDialog.setPositiveButton("提交",
-                                    new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            UploadRequest(editText.getText().toString(), outputImage);
-                                        }
-                                    }).show();
-                            doRegister();
-                            break;
-                        }
-                    default:
-                        break;
+        waitingDialog.show();                //上传中...等待dialog
+        switch (request_flag) {
+            case TRANSMIT:
+                //TODO: 加入人脸检测逻辑
+                break;
+            case REGISTER:
+                //判定是否捕捉到了图片，创建新的人脸数据
+                if (photo.hasImage()) {
+                    //新建一个Dialog输入学生姓名（user_id）
+                    final EditText editText = new EditText(TakePhotoActivity.this);
+                    AlertDialog.Builder inputDialog =
+                            new AlertDialog.Builder(TakePhotoActivity.this);
+                    inputDialog.setTitle("在此输入学生姓名").setView(editText);
+                    inputDialog.setPositiveButton("提交",
+                            (dialog, which) -> doRegister());
+                    inputDialog.show();
                 }
-                break;
-            default:
-                break;
+
         }
     }
 
 
     private void doRegister() {
-
         //获取方才捕捉到的图片
         outputImage = new File(getExternalCacheDir(), "face_check_take_photo_image.jpg");
 
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                Bitmap bitmap = BitmapFactory.decodeFile(outputImage.getAbsolutePath());
-                if (bitmap == null) {
-                    File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
-                    if (!failedFile.getParentFile().exists()) {
-                        failedFile.getParentFile().mkdirs();
-                    }
-                    outputImage.renameTo(failedFile);
+        executorService.execute(() -> {
+            //将图像转码为Bitmap
+            Bitmap bitmap = BitmapFactory.decodeFile(outputImage.getAbsolutePath());
+            if (bitmap == null) {
+                File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
+                if (!failedFile.getParentFile().exists()) {
+                    failedFile.getParentFile().mkdirs();
                 }
-                bitmap = ArcSoftImageUtil.getAlignedBitmap(bitmap, true);
-                if (bitmap == null) {
-                    File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
-                    if (!failedFile.getParentFile().exists()) {
-                        failedFile.getParentFile().mkdirs();
-                    }
-                    outputImage.renameTo(failedFile);
+                outputImage.renameTo(failedFile);
+            }
+            bitmap = ArcSoftImageUtil.getAlignedBitmap(bitmap, true);
+            if (bitmap == null) {
+                File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
+                if (!failedFile.getParentFile().exists()) {
+                    failedFile.getParentFile().mkdirs();
+                }
+                outputImage.renameTo(failedFile);
 
-                }
-                byte[] bgr24 = ArcSoftImageUtil.createImageData(bitmap.getWidth(), bitmap.getHeight(), ArcSoftImageFormat.BGR24);
-                int transformCode = ArcSoftImageUtil.bitmapToImageData(bitmap, bgr24, ArcSoftImageFormat.BGR24);
-                if (transformCode != ArcSoftImageUtilError.CODE_SUCCESS) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            waitingDialog.dismiss();
-                        }
-                    });
-                    return;
-                }
-                boolean success = FaceServer.getInstance().registerBgr24(TakePhotoActivity.this, bgr24, bitmap.getWidth(), bitmap.getHeight(),
-                        outputImage.getName().substring(0, outputImage.getName().lastIndexOf(".")));
-                if (!success) {
-                    File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
-                    if (!failedFile.getParentFile().exists()) {
-                        failedFile.getParentFile().mkdirs();
+            }
+            //从Bitmap转化为bgr24数据
+            byte[] bgr24 = ArcSoftImageUtil.createImageData(bitmap.getWidth(), bitmap.getHeight(), ArcSoftImageFormat.BGR24);
+            int transformCode = ArcSoftImageUtil.bitmapToImageData(bitmap, bgr24, ArcSoftImageFormat.BGR24);
+            if (transformCode != ArcSoftImageUtilError.CODE_SUCCESS) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        waitingDialog.dismiss();
                     }
-                    outputImage.renameTo(failedFile);
-                } else {
-                    Log.d("Register", "run: 注册成功");
+                });
+                return;
+            }
+
+            //TODO:为注册的人脸数据添加标签以进行1:1识别，或者改为1:N？
+            //发起注册请求并获取结果，该图片注册成功后会被保存，下次初始化引擎自动读取文件列表到已识别人脸中
+            boolean success = FaceServer.getInstance().registerBgr24(TakePhotoActivity.this, bgr24, bitmap.getWidth(), bitmap.getHeight(),
+                    outputImage.getName().substring(0, outputImage.getName().lastIndexOf(".")));
+            if (!success) {
+                File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
+                if (!failedFile.getParentFile().exists()) {
+                    failedFile.getParentFile().mkdirs();
                 }
+                outputImage.renameTo(failedFile);
+            } else {
+                Log.d("Register", "run: 注册成功");
+                Toast.makeText(this, "注册成功", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    //注册上传函数，成功返回1，否则返回0
-    private void UploadRequest(String user_id, File user_pictrue) {
-
-        //请求url
-        String url = "http://72156fb1c1fcb432.natapp.cc/";
-
-        //自定义MEDIA_TYPE_PNG格式
-        MediaType MEDIA_TYPE_PNG = MediaType.parse(user_pictrue.getName());
-        MultipartBody.Builder builder = new MultipartBody.Builder();
-        builder.setType(MultipartBody.FORM);
-
-        //不同请求方式
-        if (request_flag == TRANSMIT) {
-            url = url + "transmit";
-            builder.addFormDataPart("transmit",
-                    user_pictrue.getName(), RequestBody.create(MEDIA_TYPE_PNG, user_pictrue));
-
-        } else if (request_flag == REGISTER) {
-            url = url + "register";
-            builder.addFormDataPart("user_id", user_id);
-            builder.addFormDataPart("register",
-                    user_pictrue.getName(), RequestBody.create(MEDIA_TYPE_PNG, user_pictrue));
-        }
-
-        RequestBody requestBody = builder.build();
-
-        OkHttpClient okHttpClient = new OkHttpClient();
-        Request request = new Request
-                .Builder()
-                .url(url)
-                .post(requestBody).build();
-        Call call = okHttpClient.newCall(request);
-
-        call.enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                if (e instanceof SocketTimeoutException) {
-                    //传输出现超时错误
-                    Message msg_timeout = new Message();
-                    msg_timeout.what = 408;
-                    msg_timeout.obj = "请求超时，请检查网络";
-
-                    handler.sendMessage(msg_timeout);
-                }
-
-                //其他错误的处理
-                Message msg_unknown = new Message();
-                msg_unknown.what = -1;
-                msg_unknown.obj = "未知错误";
-                handler.sendMessage(msg_unknown);
-
-                Log.e("internet_error", e.toString());
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                //请求成功，数据回传
-
-                String response_data = response.body().string();
-
-                Message msg = new Message();
-                msg.what = 200;
-                msg.obj = response_data;
-                handler.sendMessage(msg);
-
-                Log.d("internet_ok", response_data);
-            }
-        });
-    }
 }

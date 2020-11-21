@@ -17,7 +17,8 @@
         android:roundIcon="@mipmap/xixi"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        tools:ignore="GoogleAppIndexingWarning">
+        tools:ignore="GoogleAppIndexingWarning"
+        >
 
         <activity android:name=".MainActivity">
             <intent-filter>
@@ -30,7 +31,7 @@
         <activity android:name=".TakePhotoActivity" />
 
         <provider
-            android:name="android.support.v4.content.FileProvider"
+            android:name="androidx.core.content.FileProvider"
             android:authorities="com.example.cameraalbumtest.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
