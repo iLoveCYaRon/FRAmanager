@@ -1,4 +1,4 @@
-package com.example.zmx.facerecognitionattendancemanager;
+package com.example.zmx.facerecognitionattendancemanager.fragment;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -8,9 +8,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-public class TimeSettingFragment extends Fragment {
+import com.example.zmx.facerecognitionattendancemanager.R;
+
+public class StuListFragment extends Fragment {
+    @Nullable
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_time_setting, container, false);
+        View view = inflater.inflate(R.layout.fragment_stu_list, container, false);
         return view;
     }
+
+
 }

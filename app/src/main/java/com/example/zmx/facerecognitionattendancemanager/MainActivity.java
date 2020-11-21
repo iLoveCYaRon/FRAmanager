@@ -1,12 +1,9 @@
 package com.example.zmx.facerecognitionattendancemanager;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
-import android.content.Context;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -18,13 +15,11 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 import com.arcsoft.face.ActiveFileInfo;
 import com.arcsoft.face.ErrorInfo;
@@ -33,6 +28,9 @@ import com.arcsoft.face.VersionInfo;
 import com.arcsoft.face.enums.RuntimeABI;
 import com.example.zmx.facerecognitionattendancemanager.common.Constants;
 import com.example.zmx.facerecognitionattendancemanager.faceserver.FaceServer;
+import com.example.zmx.facerecognitionattendancemanager.fragment.HistoryFragment;
+import com.example.zmx.facerecognitionattendancemanager.fragment.StuListFragment;
+import com.example.zmx.facerecognitionattendancemanager.fragment.TimeSettingFragment;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -48,7 +46,7 @@ import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener {
     private static final String TAG = "MainActivity";
-    // 在线激活所需的权限
+    //在线激活所需的权限
     private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
     private static final String[] NEEDED_PERMISSIONS = new String[]{
             Manifest.permission.READ_PHONE_STATE
@@ -63,23 +61,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             "libarcsoft_image_util.so",
     };
 
-    final int TRANSMIT = 0;
-    final int REGISTER = 1;
 
+    //界面控件相关
     private DrawerLayout drawerLayout;
-
-    private static final String CURRENT_FRAGMENT = "STATE_FRAGMENT_SHOW";
-
+    private FloatingActionButton floatingActionButton;
     private FragmentManager fragmentManager;
 
+
+    //界面逻辑相关
+    //用于判定主界面浮动按钮的功能是注册还是
+    final int TRANSMIT = 0;
+    final int REGISTER = 1;
+    private static final String CURRENT_FRAGMENT = "STATE_FRAGMENT_SHOW";
     private Fragment currentFragment = new Fragment();
     private List<Fragment> fragments = new ArrayList<>();
-
-    private FloatingActionButton floatingActionButton;
-
     private int currentIndex = 0;
-
-    private IntentFilter intentFilter;
 
 
     @Override
@@ -87,7 +83,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        fragmentManager = getSupportFragmentManager();      //初始化fragmentManager
+        //初始化fragmentManager
+        fragmentManager = getSupportFragmentManager();
+
+        //检测动态库是否存在 该库仅支持ARM架构
         libraryExists = checkSoFile(LIBRARIES);
         if (!libraryExists) {
             showToast("未找到动态库文件");
@@ -97,8 +96,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             Log.i(TAG, "onCreate: getVersion, code is: " + code + ", versionInfo is: " + versionInfo);
         }
 
+        //初始化人脸识别引擎
         FaceServer.getInstance().init(this);
-        //toolbar
+
+        //设置抽屉栏为顶栏
         final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
@@ -107,14 +108,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             actionBar.setHomeAsUpIndicator(R.mipmap.toolbar_menu);
         }
 
-        //drawer_layout抽屉布局
+        //添加左侧抽屉布局
         drawerLayout = findViewById(R.id.drawer_layout);
         final NavigationView navView = findViewById(R.id.nav_view);
 
-        //navView.setCheckedItem(R.id.nav_history);           //设置被选中的项目
         //设置抽屉中单项点击事件
         navView.setNavigationItemSelectedListener(new NavigationView.
                 OnNavigationItemSelectedListener() {
+            @SuppressLint("NonConstantResourceId")
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 drawerLayout.closeDrawers();        //点击每个按钮后都后关闭抽屉
@@ -149,14 +150,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         floatingActionButton = findViewById(R.id.fab_signature);
         floatingActionButton.setOnClickListener(this);
 
-
         if (savedInstanceState != null) {       //内存重启时调用
 
             //获取“内存重启”时保存的索引下标
             currentIndex = savedInstanceState.getInt(CURRENT_FRAGMENT, 0);
 
             //注意，添加顺序要跟下面添加的顺序一样！！！！
-            fragments.removeAll(fragments);
+            fragments.clear();
             fragments.add(fragmentManager.findFragmentByTag(0 + ""));
             fragments.add(fragmentManager.findFragmentByTag(1 + ""));
             fragments.add(fragmentManager.findFragmentByTag(2 + ""));
@@ -174,8 +174,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
     }
 
-//以下是fragment切换涉及到的逻辑
-
+    //以下是fragment切换涉及到的逻辑
     /**
      * 使用show() hide()切换页面
      * 显示fragment
@@ -233,9 +232,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
 
-    //按钮响应
+    //悬浮按钮响应
+    @SuppressLint("NonConstantResourceId")
     @Override
     public void onClick(View v) {
+        //考虑到可能有其他按钮 暂时保留switch结构
         switch (v.getId()) {
             //点击扫脸按钮的功能
             case R.id.fab_signature:
@@ -276,7 +277,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             case R.id.settings:
                 //设置的代码
                 break;
-            case android.R.id.home:     //注意深坑：这里的R前面还有个android
+            case android.R.id.home:
+                //注意深坑：这里的R前面还有个android
                 drawerLayout.openDrawer(GravityCompat.START);
                 break;
             default:
@@ -296,7 +298,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
     }
 
-
+    //激活人脸识别引擎
     public void activeEngine(final View view) {
         if (!checkPermissions(NEEDED_PERMISSIONS)) {
             ActivityCompat.requestPermissions(this, NEEDED_PERMISSIONS, ACTION_REQUEST_PERMISSIONS);
@@ -362,16 +364,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     }
 
-    @Override
-    void afterRequestPermission(int requestCode, boolean isAllGranted) {
-
-    }
-
-    @Override
-    public void onPointerCaptureChanged(boolean hasCapture) {
-
-    }
-
+    //检查库文件方法
     private boolean checkSoFile(String[] libraries) {
         File dir = new File(getApplicationInfo().nativeLibraryDir);
         File[] files = dir.listFiles();
@@ -387,5 +380,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             exists &= libraryNameList.contains(library);
         }
         return exists;
+    }
+
+    @Override
+    void afterRequestPermission(int requestCode, boolean isAllGranted) {
+
+    }
+
+    @Override
+    public void onPointerCaptureChanged(boolean hasCapture) {
+
     }
 }

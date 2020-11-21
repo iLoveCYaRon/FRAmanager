@@ -1,4 +1,4 @@
-package com.example.zmx.facerecognitionattendancemanager;
+package com.example.zmx.facerecognitionattendancemanager.fragment;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
@@ -14,6 +14,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.example.zmx.facerecognitionattendancemanager.History;
+import com.example.zmx.facerecognitionattendancemanager.HistoryAdapater;
+import com.example.zmx.facerecognitionattendancemanager.R;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
