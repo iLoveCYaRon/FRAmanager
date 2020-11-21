@@ -194,6 +194,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
                                             UploadRequest(editText.getText().toString(), outputImage);
                                         }
                                     }).show();
+                            doRegister();
                             break;
                         }
                     default:

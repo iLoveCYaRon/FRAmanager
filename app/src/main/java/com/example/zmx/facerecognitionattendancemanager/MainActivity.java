@@ -29,9 +29,12 @@ import android.widget.Toast;
 import com.arcsoft.face.ActiveFileInfo;
 import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
+import com.arcsoft.face.VersionInfo;
 import com.arcsoft.face.enums.RuntimeABI;
 import com.example.zmx.facerecognitionattendancemanager.common.Constants;
+import com.example.zmx.facerecognitionattendancemanager.faceserver.FaceServer;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,6 +53,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private static final String[] NEEDED_PERMISSIONS = new String[]{
             Manifest.permission.READ_PHONE_STATE
     };
+    // Demo 所需的动态库文件
+    boolean libraryExists = true;
+    private static final String[] LIBRARIES = new String[]{
+            // 人脸相关
+            "libarcsoft_face_engine.so",
+            "libarcsoft_face.so",
+            // 图像库相关
+            "libarcsoft_image_util.so",
+    };
+
     final int TRANSMIT = 0;
     final int REGISTER = 1;
 
@@ -75,9 +88,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         setContentView(R.layout.activity_main);
 
         fragmentManager = getSupportFragmentManager();      //初始化fragmentManager
+        libraryExists = checkSoFile(LIBRARIES);
+        if (!libraryExists) {
+            showToast("未找到动态库文件");
+        }else {
+            VersionInfo versionInfo = new VersionInfo();
+            int code = FaceEngine.getVersion(versionInfo);
+            Log.i(TAG, "onCreate: getVersion, code is: " + code + ", versionInfo is: " + versionInfo);
+        }
 
-
-
+        FaceServer.getInstance().init(this);
         //toolbar
         final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -350,5 +370,22 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     @Override
     public void onPointerCaptureChanged(boolean hasCapture) {
 
+    }
+
+    private boolean checkSoFile(String[] libraries) {
+        File dir = new File(getApplicationInfo().nativeLibraryDir);
+        File[] files = dir.listFiles();
+        if (files == null || files.length == 0) {
+            return false;
+        }
+        List<String> libraryNameList = new ArrayList<>();
+        for (File file : files) {
+            libraryNameList.add(file.getName());
+        }
+        boolean exists = true;
+        for (String library : libraries) {
+            exists &= libraryNameList.contains(library);
+        }
+        return exists;
     }
 }
