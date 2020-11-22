@@ -197,7 +197,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
             //TODO:为注册的人脸数据添加标签以进行1:1识别，或者改为1:N？
             //发起注册请求并获取结果，该图片注册成功后会被保存，下次初始化引擎自动读取文件列表到已识别人脸中
             boolean success = FaceServer.getInstance().registerBgr24(TakePhotoActivity.this, bgr24, bitmap.getWidth(), bitmap.getHeight(),
-                    username));
+                    username);
             if (!success) {
                 File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
                 if (!failedFile.getParentFile().exists()) {
