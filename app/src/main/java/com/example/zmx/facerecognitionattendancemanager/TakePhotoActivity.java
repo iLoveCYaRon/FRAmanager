@@ -1,5 +1,6 @@
 package com.example.zmx.facerecognitionattendancemanager;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -17,11 +18,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.arcsoft.imageutil.ArcSoftImageFormat;
 import com.arcsoft.imageutil.ArcSoftImageUtil;
 import com.arcsoft.imageutil.ArcSoftImageUtilError;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import com.example.zmx.facerecognitionattendancemanager.faceserver.FaceServer;
@@ -36,7 +40,6 @@ import butterknife.ButterKnife;
 
 
 public class TakePhotoActivity extends AppCompatActivity implements View.OnClickListener {
-
     //定义文件存放的目录
     private static final String ROOT_DIR = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "arcface";
     private static final String REGISTER_DIR = ROOT_DIR + File.separator + "register";
@@ -46,7 +49,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
     private ProgressDialog waitingDialog;
     @SuppressLint("NonConstantResourceId")
     @BindView(R.id.photo)
-    public SubsamplingScaleImageView photo;
+    public ImageView photo;
 
     //业务逻辑相关
     //用于判断是register（注册人脸）还是transmit（校验人脸）
@@ -112,8 +115,12 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
         switch (requestCode) {
             case TAKE_PHOTO:
                 switch (resultCode) {
-                    case RESULT_OK:             //拍照成功后加载图片
-                        photo.setImage(ImageSource.uri(imageUri));
+                    case RESULT_OK:             //拍照成功后加载图片，注意图片的方向
+                        Glide.with(this)
+                                .load(outputImage)
+                                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                .skipMemoryCache(true)
+                                .into(photo);
                         break;
                     case RESULT_CANCELED:       //取消拍照后结束此Activity
                         TakePhotoActivity.this.finish();
@@ -136,14 +143,14 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
                 break;
             case REGISTER:
                 //判定是否捕捉到了图片，创建新的人脸数据
-                if (photo.hasImage()) {
+                if (photo.getDrawable()!=null) {
                     //新建一个Dialog输入学生姓名（user_id）
                     final EditText editText = new EditText(TakePhotoActivity.this);
                     AlertDialog.Builder inputDialog =
                             new AlertDialog.Builder(TakePhotoActivity.this);
                     inputDialog.setTitle("在此输入学生姓名").setView(editText);
                     inputDialog.setPositiveButton("提交",
-                            (dialog, which) -> doRegister());
+                            (dialog, which) -> doRegister(editText.getText().toString()));
                     inputDialog.show();
                 }
 
@@ -151,7 +158,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
     }
 
 
-    private void doRegister() {
+    private void doRegister(String username) {
         //获取方才捕捉到的图片
         outputImage = new File(getExternalCacheDir(), "face_check_take_photo_image.jpg");
 
@@ -186,11 +193,10 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
                 });
                 return;
             }
-
-            //TODO:为注册的人脸数据添加标签以进行1:1识别，或者改为1:N？
+            
             //发起注册请求并获取结果，该图片注册成功后会被保存，下次初始化引擎自动读取文件列表到已识别人脸中
             boolean success = FaceServer.getInstance().registerBgr24(TakePhotoActivity.this, bgr24, bitmap.getWidth(), bitmap.getHeight(),
-                    outputImage.getName().substring(0, outputImage.getName().lastIndexOf(".")));
+                    username);
             if (!success) {
                 File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
                 if (!failedFile.getParentFile().exists()) {
@@ -199,7 +205,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
                 outputImage.renameTo(failedFile);
             } else {
                 Log.d("Register", "run: 注册成功");
-                Toast.makeText(this, "注册成功", Toast.LENGTH_SHORT).show();
+                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "注册成功", Toast.LENGTH_SHORT).show());
             }
         });
     }

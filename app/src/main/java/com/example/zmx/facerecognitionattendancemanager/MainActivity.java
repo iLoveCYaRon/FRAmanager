@@ -45,10 +45,11 @@ import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener {
     private static final String TAG = "MainActivity";
-    //在线激活所需的权限
+    //在线激活和拍摄照片所需要的权限
     private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
     private static final String[] NEEDED_PERMISSIONS = new String[]{
-            Manifest.permission.READ_PHONE_STATE
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.CAMERA
     };
     // Demo 所需的动态库文件
     boolean libraryExists = true;
