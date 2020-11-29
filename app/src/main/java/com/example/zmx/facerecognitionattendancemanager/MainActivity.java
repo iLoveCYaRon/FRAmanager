@@ -19,6 +19,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.arcsoft.face.ActiveFileInfo;
 import com.arcsoft.face.ErrorInfo;
@@ -274,8 +275,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.settings:
+            case R.id.active_button:
+                //Toast.makeText(this, "You clicked the button", Toast.LENGTH_SHORT).show();
                 //设置的代码
+                activeEngine(findViewById(R.id.active_button));
                 break;
             case android.R.id.home:
                 //注意深坑：这里的R前面还有个android
