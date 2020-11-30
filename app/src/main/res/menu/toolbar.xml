@@ -3,10 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/settings"
-        android:icon="@drawable/toolbar_settings"
-        android:title="@string/settings"
-        app:showAsAction="always"
+        android:id = "@+id/active_button"
+        android:title = "激活人脸引擎"
         />
 
 </menu>

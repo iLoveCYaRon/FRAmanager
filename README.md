@@ -49,7 +49,7 @@
 
 ![点击上传后弹出等待Dialog](https://github.com/Paulpaulzmx/FRAmanager/blob/master/images/5.png)
 
-![Dialog消失后返回上个界面，并                                                                                                        提示xxx签到成功](https://github.com/Paulpaulzmx/FRAmanager/blob/master/images/6.png)
+![Dialog消失后返回上个界面，并提示xxx签到成功](https://github.com/Paulpaulzmx/FRAmanager/blob/master/images/6.png)
 
 - 学生列表Fragment主要用与注册新的用户，将新的人脸信息录入
 - 点击学生列表浮动按钮跳转到拍照页面，若拍照成功，进入上传页面；若失败则返回之前的页面。

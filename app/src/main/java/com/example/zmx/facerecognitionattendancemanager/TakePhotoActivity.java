@@ -136,24 +136,27 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
 
     @Override
     public void onClick(View view) {
-        waitingDialog.show();                //上传中...等待dialog
-        switch (request_flag) {
-            case TRANSMIT:
-                //TODO: 加入人脸检测逻辑
-                break;
-            case REGISTER:
-                //判定是否捕捉到了图片，创建新的人脸数据
-                if (photo.getDrawable()!=null) {
-                    //新建一个Dialog输入学生姓名（user_id）
-                    final EditText editText = new EditText(TakePhotoActivity.this);
-                    AlertDialog.Builder inputDialog =
-                            new AlertDialog.Builder(TakePhotoActivity.this);
-                    inputDialog.setTitle("在此输入学生姓名").setView(editText);
-                    inputDialog.setPositiveButton("提交",
-                            (dialog, which) -> doRegister(editText.getText().toString()));
-                    inputDialog.show();
-                }
+        //判定是否捕捉到了图片，如果没有则按钮点击无效
+        if (photo.getDrawable() != null) {
+            //新建一个AlertDialog用于输入学生姓名（user_id）
+            final EditText editText = new EditText(TakePhotoActivity.this);
+            AlertDialog.Builder inputDialog =
+                    new AlertDialog.Builder(TakePhotoActivity.this);
+            inputDialog.setTitle("在此输入学生姓名").setView(editText);
 
+            //根据Request_flag设置相应点击事件
+            switch (request_flag) {
+                case TRANSMIT:
+                    inputDialog.setPositiveButton("提交",
+                            (dialog, which) -> {doSign(editText.getText().toString()); waitingDialog.show();});
+                    break;
+                case REGISTER:
+                    inputDialog.setPositiveButton("提交",
+                            (dialog, which) -> {doRegister(editText.getText().toString()); waitingDialog.show();});
+                    break;
+            }
+
+            inputDialog.show();
         }
     }
 
@@ -184,17 +187,8 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
             //从Bitmap转化为bgr24数据
             byte[] bgr24 = ArcSoftImageUtil.createImageData(bitmap.getWidth(), bitmap.getHeight(), ArcSoftImageFormat.BGR24);
             int transformCode = ArcSoftImageUtil.bitmapToImageData(bitmap, bgr24, ArcSoftImageFormat.BGR24);
-            if (transformCode != ArcSoftImageUtilError.CODE_SUCCESS) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        waitingDialog.dismiss();
-                    }
-                });
-                return;
-            }
             
-            //发起注册请求并获取结果，该图片注册成功后会被保存，下次初始化引擎自动读取文件列表到已识别人脸中
+            //发起注册请求并获取结果，该图片注册成功后“人脸特征数据”会被保存，下次初始化引擎自动读取文件列表到已识别人脸中
             boolean success = FaceServer.getInstance().registerBgr24(TakePhotoActivity.this, bgr24, bitmap.getWidth(), bitmap.getHeight(),
                     username);
             if (!success) {
@@ -204,9 +198,58 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
                 }
                 outputImage.renameTo(failedFile);
             } else {
-                Log.d("Register", "run: 注册成功");
+                Log.d("Register", "注册成功");
                 runOnUiThread(() -> Toast.makeText(getApplicationContext(), "注册成功", Toast.LENGTH_SHORT).show());
             }
+
+            //取消上传中对话框显示
+            runOnUiThread(() -> waitingDialog.dismiss());
+        });
+    }
+
+    private void doSign(String username){
+        //获取方才捕捉到的图片
+        outputImage = new File(getExternalCacheDir(), "face_check_take_photo_image.jpg");
+
+        executorService.execute(() -> {
+            //将图像转码为Bitmap
+            Bitmap bitmap = BitmapFactory.decodeFile(outputImage.getAbsolutePath());
+            if (bitmap == null) {
+                File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
+                if (!failedFile.getParentFile().exists()) {
+                    failedFile.getParentFile().mkdirs();
+                }
+                outputImage.renameTo(failedFile);
+            }
+            bitmap = ArcSoftImageUtil.getAlignedBitmap(bitmap, true);
+            if (bitmap == null) {
+                File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
+                if (!failedFile.getParentFile().exists()) {
+                    failedFile.getParentFile().mkdirs();
+                }
+                outputImage.renameTo(failedFile);
+            }
+            //从Bitmap转化为bgr24数据
+            byte[] bgr24 = ArcSoftImageUtil.createImageData(bitmap.getWidth(), bitmap.getHeight(), ArcSoftImageFormat.BGR24);
+            int transformCode = ArcSoftImageUtil.bitmapToImageData(bitmap, bgr24, ArcSoftImageFormat.BGR24);
+
+            //TODO:为注册的人脸数据添加标签以进行1:1识别，或者改为1:N？
+            //发起签到请求并获取结果，
+            boolean success = FaceServer.getInstance().signBgr24(TakePhotoActivity.this, bgr24, bitmap.getWidth(), bitmap.getHeight(),
+                    username);
+            if (!success) {
+                File failedFile = new File(REGISTER_FAILED_DIR + File.separator + outputImage.getName());
+                if (!failedFile.getParentFile().exists()) {
+                    failedFile.getParentFile().mkdirs();
+                }
+                outputImage.renameTo(failedFile);
+            } else {
+                Log.d("Sign", "run: 签到成功");
+                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "签到成功", Toast.LENGTH_SHORT).show());
+            }
+
+            //取消上传中对话框显示
+            runOnUiThread(() -> waitingDialog.dismiss());
         });
     }
 
