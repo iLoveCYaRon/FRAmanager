@@ -377,6 +377,79 @@ public class FaceServer {
     }
 
     /**
+     * 用于签到对比人脸
+     *
+     * @param context 上下文对象
+     * @param bgr24   bgr24数据
+     * @param width   bgr24宽度
+     * @param height  bgr24高度
+     * @param name    保存的名字，若为空则使用时间戳
+     * @return  是否签到成功
+     */
+
+    public boolean signBgr24(Context context, byte[] bgr24, int width, int height, String name){
+        synchronized (this) {
+            if (faceEngine == null || context == null || bgr24 == null || width % 4 != 0 || bgr24.length != width * height * 3) {
+                Log.e(TAG, "signBgr24:  invalid params");
+                return false;
+            }
+
+            if (ROOT_PATH == null) {
+                ROOT_PATH = context.getFilesDir().getAbsolutePath();
+            }
+            //特征存储的文件夹
+            File featureDir = new File(ROOT_PATH + File.separator + SAVE_FEATURE_DIR);
+            if (!featureDir.exists() && !featureDir.mkdirs()) {
+                Log.e(TAG, "signBgr24: can not create feature directory");
+                return false;
+            }
+            //图片存储的文件夹
+            File imgDir = new File(ROOT_PATH + File.separator + SAVE_IMG_DIR);
+            if (!imgDir.exists() && !imgDir.mkdirs()) {
+                Log.e(TAG, "signBgr24: can not create image directory");
+                return false;
+            }
+            //人脸检测
+            List<FaceInfo> faceInfoList = new ArrayList<>();
+            int code = faceEngine.detectFaces(bgr24, width, height, FaceEngine.CP_PAF_BGR24, faceInfoList);
+
+            if (code == ErrorInfo.MOK ) {
+                FaceFeature faceFeature = new FaceFeature();
+
+                //特征提取
+                code = faceEngine.extractFaceFeature(bgr24, width, height, FaceEngine.CP_PAF_BGR24, faceInfoList.get(0), faceFeature);
+
+                FaceFeature tempFaceFeature = new FaceFeature();
+                FaceSimilar faceSimilar = new FaceSimilar();
+                float maxSimilar = 0;
+                int maxSimilarIndex = -1;
+                isProcessing = true;
+                if(faceRegisterInfoList.size() == 0)
+                    return false;
+                for (int i = 0; i < faceRegisterInfoList.size(); i++){
+                    if(name.equals(faceRegisterInfoList.get(i).getName())){
+                        tempFaceFeature.setFeatureData(faceRegisterInfoList.get(i).getFeatureData());
+                        faceEngine.compareFaceFeature(faceFeature, tempFaceFeature, faceSimilar);
+                        if (faceSimilar.getScore() > maxSimilar) {
+                            maxSimilar = faceSimilar.getScore();
+                            maxSimilarIndex = i;
+                        }
+                    }
+                    isProcessing = false;
+                    if (maxSimilarIndex != -1) {
+                        CompareResult temp = new CompareResult(faceRegisterInfoList.get(maxSimilarIndex).getName(), maxSimilar);
+                        if(temp.getSimilar() > 0.8)
+                            return true;
+                    }
+                }
+
+            } else {
+                Log.e(TAG, "signBgr24: no face detected, code is " + code);
+            }
+            return false;
+        }
+    }
+    /**
      * 截取合适的头像并旋转，保存为注册头像
      *
      * @param originImageData 原始的BGR24数据
