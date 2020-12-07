@@ -168,7 +168,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         } else {      //正常启动时调用
 
             fragments.add(new HistoryFragment());
-            fragments.add(new StuListFragment());
+            fragments.add(new StuListFragment(MainActivity.this));
             fragments.add(new TimeSettingFragment());
 
             showFragment();

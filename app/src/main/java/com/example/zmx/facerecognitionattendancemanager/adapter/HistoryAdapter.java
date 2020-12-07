@@ -1,4 +1,4 @@
-package com.example.zmx.facerecognitionattendancemanager;
+package com.example.zmx.facerecognitionattendancemanager.adapter;
 
 import android.content.Context;
 import androidx.annotation.NonNull;
@@ -9,10 +9,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.example.zmx.facerecognitionattendancemanager.R;
+import com.example.zmx.facerecognitionattendancemanager.model.History;
+
 import java.util.List;
 
 
-public class HistoryAdapater extends RecyclerView.Adapter<HistoryAdapater.ViewHolder> {
+public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
 
     private Context mContext;
 
@@ -31,7 +34,7 @@ public class HistoryAdapater extends RecyclerView.Adapter<HistoryAdapater.ViewHo
         }
     }
 
-    public HistoryAdapater(List<History> historyList) {
+    public HistoryAdapter(List<History> historyList) {
         mHistoryList = historyList;
     }
 

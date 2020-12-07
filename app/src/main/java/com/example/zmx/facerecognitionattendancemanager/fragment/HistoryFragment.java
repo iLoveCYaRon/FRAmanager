@@ -14,8 +14,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.example.zmx.facerecognitionattendancemanager.History;
-import com.example.zmx.facerecognitionattendancemanager.HistoryAdapater;
+import com.example.zmx.facerecognitionattendancemanager.model.History;
+import com.example.zmx.facerecognitionattendancemanager.adapter.HistoryAdapter;
 import com.example.zmx.facerecognitionattendancemanager.R;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -31,7 +31,6 @@ import okhttp3.Response;
 
 public class HistoryFragment extends Fragment {
 
-    private HistoryAdapater adapater;
     private List<History> historyList;
 
 
@@ -124,8 +123,8 @@ public class HistoryFragment extends Fragment {
         RecyclerView recyclerView = getActivity().findViewById(R.id.recycler_view);
         GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), 2);
         recyclerView.setLayoutManager(layoutManager);
-        adapater = new HistoryAdapater(historyList);
-        recyclerView.setAdapter(adapater);
+        HistoryAdapter adapter = new HistoryAdapter(historyList);
+        recyclerView.setAdapter(adapter);
     }
 
 
