@@ -1,4 +1,4 @@
-package com.example.zmx.facerecognitionattendancemanager;
+package com.example.zmx.facerecognitionattendancemanager.model;
 
 public class History {
 
