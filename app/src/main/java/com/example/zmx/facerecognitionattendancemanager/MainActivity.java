@@ -5,6 +5,8 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
+
+import com.example.zmx.facerecognitionattendancemanager.test.TestImage;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import androidx.core.app.ActivityCompat;
@@ -19,7 +21,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 import com.arcsoft.face.ActiveFileInfo;
 import com.arcsoft.face.ErrorInfo;
