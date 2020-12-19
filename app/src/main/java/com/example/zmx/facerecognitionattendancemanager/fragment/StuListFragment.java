@@ -42,10 +42,15 @@ public class StuListFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_stu_list, container, false);
-        ROOT_PATH = context.getFilesDir().getAbsolutePath();
-        imgDir = new File(ROOT_PATH + File.separator + SAVE_IMG_DIR);
-        initRecyclerView(view);
+
+        if(context!=null) {
+            ROOT_PATH = context.getFilesDir().getAbsolutePath();
+            imgDir = new File(ROOT_PATH + File.separator + SAVE_IMG_DIR);
+        }
+
+        //从文件中读入数据到实体并初始化RecyclerView（先初始化View也可以，View中内容随List更新而更新，但View的更新一般不会影响List）
         initStudents();
+        initRecyclerView(view);
 
         //发送http请求的初尝试，要新开线程，以防与UI冲突
         new Thread(() -> {
@@ -56,8 +61,6 @@ public class StuListFragment extends Fragment {
             }
         }).start();
 
-
-
         return view;
     }
 
@@ -67,12 +70,10 @@ public class StuListFragment extends Fragment {
 
     private void initRecyclerView(View view) {
         //获取RecyclerView
-        RecyclerView recyclerView = (RecyclerView) view.findViewById(R.id.stu_list_recycler_view);
-        //创建adapter
-        StudentAdapter adapter = new StudentAdapter(stuList);
-        //给RecyclerView设置adapter
-        recyclerView.setAdapter(adapter);
-        //设置layoutManager
+        RecyclerView recyclerView = view.findViewById(R.id.stu_list_recycler_view);
+        //给RecyclerView创建并设置adapter
+        recyclerView.setAdapter(new StudentAdapter(stuList));
+        //设置布局为纵向
         recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         //设置item的分割线
         recyclerView.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
@@ -80,19 +81,17 @@ public class StuListFragment extends Fragment {
     }
 
     private void initStudents() {
-
-        ArrayList<File> list = new ArrayList<>();
-        getFiles(list);
-        for (int i = 0; i < list.size(); i++) {
-            String mPicName = list.get(i).getName();
-
+        List<File> files = getImageDirFiles();
+        for (int i = 0; i < files.size(); i++) {
+            String mPicName = files.get(i).getName();
             File file = new File(imgDir + File.separator + mPicName);
 
             stuList.add(new Student(mPicName.substring(0, mPicName.length()-4), file));
         }
     }
 
-    private void getFiles(ArrayList<File> list) {
+    private List<File> getImageDirFiles() {
+        List<File> list = new ArrayList<>();
         File[] allFiles = imgDir.listFiles();
         if (allFiles != null) { // 若文件不为空，则遍历文件长度
             for (File file : allFiles) {
@@ -101,6 +100,7 @@ public class StuListFragment extends Fragment {
                 }
             }
         }
+        return list;
 
     }
 }
