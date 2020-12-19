@@ -1,9 +1,11 @@
 package com.example.zmx.facerecognitionattendancemanager.fragment;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -16,8 +18,10 @@ import android.view.ViewGroup;
 import com.example.zmx.facerecognitionattendancemanager.R;
 import com.example.zmx.facerecognitionattendancemanager.model.Student;
 import com.example.zmx.facerecognitionattendancemanager.adapter.StudentAdapter;
+import com.example.zmx.facerecognitionattendancemanager.test.TestImage;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -33,6 +37,7 @@ public class StuListFragment extends Fragment {
     public String ROOT_PATH;
     private File imgDir;
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -41,6 +46,18 @@ public class StuListFragment extends Fragment {
         imgDir = new File(ROOT_PATH + File.separator + SAVE_IMG_DIR);
         initRecyclerView(view);
         initStudents();
+
+        //发送http请求的初尝试，要新开线程，以防与UI冲突
+        new Thread(() -> {
+            try {
+                TestImage.main1(imgDir.getAbsolutePath()+ File.separator  + "111.jpg");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+
+
         return view;
     }
 
