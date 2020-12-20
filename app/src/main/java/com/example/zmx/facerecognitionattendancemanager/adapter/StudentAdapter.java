@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -19,13 +20,15 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
     private List<Student> mStuList;
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView stuImage;
         TextView stuName;
+        TextView regTime;
+        TextView signCount;
 
         public ViewHolder(View view) {
             super(view);
-            stuImage = (ImageView) view.findViewById(R.id.student_image);
             stuName = (TextView) view.findViewById(R.id.student_name);
+            regTime = (TextView) view.findViewById(R.id.student_register_time);
+            signCount = (TextView) view.findViewById(R.id.history_sign_time);
         }
     }
 
@@ -46,6 +49,8 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
         Student student = mStuList.get(position);
         //Glide.with(holder.itemView).load(student.getStuImage()).into(holder.stuImage);
         holder.stuName.setText(student.getName());
+        holder.regTime.setText(student.getRegisterTime());
+        holder.signCount.setText(String.valueOf(student.getCount()));
     }
 
     @Override

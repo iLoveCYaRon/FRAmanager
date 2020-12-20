@@ -14,6 +14,8 @@ public class Student {
 
     private String name;
     private String faceFeature;
+    private String registerTime;
+    private int count;
 
     public String getFaceId() {
         return faceId;
@@ -37,5 +39,21 @@ public class Student {
 
     public void setFaceFeature(String faceFeature) {
         this.faceFeature = faceFeature;
+    }
+
+    public String getRegisterTime() {
+        return registerTime;
+    }
+
+    public void setRegisterTime(String registerTime) {
+        this.registerTime = registerTime;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
     }
 }
