@@ -9,11 +9,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+
 import com.example.zmx.facerecognitionattendancemanager.R;
 import com.example.zmx.facerecognitionattendancemanager.model.History;
 
 import java.util.List;
-
 
 public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
 
