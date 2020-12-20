@@ -13,4 +13,6 @@ public class Constants {
      * IR预览数据相对于RGB预览数据的纵向偏移量，注意：是预览数据，一般的摄像头的预览数据都是 width > height
      */
     public static final int VERTICAL_OFFSET = 0;
+
+    public static final String SERVER_IP = "http://110.64.90.71:8089";
 }

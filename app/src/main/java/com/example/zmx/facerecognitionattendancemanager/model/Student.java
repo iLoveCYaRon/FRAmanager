@@ -4,20 +4,38 @@ import java.io.File;
 
 public class Student {
 
-    private String stuName;
+    private String faceId;
 
-    private File stuImage;
-
-    public Student(String name, File image) {
-        this.stuName = name;
-        this.stuImage = image;
+    public Student(String faceId, String name, String faceFeature) {
+        this.faceId = faceId;
+        this.name = name;
+        this.faceFeature = faceFeature;
     }
 
-    public String getStuName() { return stuName; }
+    private String name;
+    private String faceFeature;
 
-    public File getStuImage() { return stuImage; }
+    public String getFaceId() {
+        return faceId;
+    }
 
-    public void setStuName(String stuName) { this.stuName = stuName; }
+    public void setFaceId(String faceId) {
+        this.faceId = faceId;
+    }
 
-    public void setStuImage(File stuImage) { this.stuImage = stuImage; }
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getFaceFeature() {
+        return faceFeature;
+    }
+
+    public void setFaceFeature(String faceFeature) {
+        this.faceFeature = faceFeature;
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.zmx.facerecognitionattendancemanager.fragment;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
@@ -11,20 +12,31 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.os.Handler;
+import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.zmx.facerecognitionattendancemanager.R;
+import com.example.zmx.facerecognitionattendancemanager.model.ResponseServer;
 import com.example.zmx.facerecognitionattendancemanager.model.Student;
 import com.example.zmx.facerecognitionattendancemanager.adapter.StudentAdapter;
 import com.example.zmx.facerecognitionattendancemanager.test.TestImage;
+import com.google.gson.Gson;
+
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class StuListFragment extends Fragment {
     /**
@@ -37,6 +49,7 @@ public class StuListFragment extends Fragment {
     public String ROOT_PATH;
     private File imgDir;
 
+    private OkHttpClient client;
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
     @Override
@@ -48,18 +61,9 @@ public class StuListFragment extends Fragment {
             imgDir = new File(ROOT_PATH + File.separator + SAVE_IMG_DIR);
         }
 
-        //从文件中读入数据到实体并初始化RecyclerView（先初始化View也可以，View中内容随List更新而更新，但View的更新一般不会影响List）
+        client = new OkHttpClient();
+        //从云端读取学生列表
         initStudents();
-        initRecyclerView(view);
-
-        //发送http请求的初尝试，要新开线程，以防与UI冲突
-        new Thread(() -> {
-            try {
-                TestImage.main1(imgDir.getAbsolutePath()+ File.separator  + "111.jpg");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }).start();
 
         return view;
     }
@@ -81,15 +85,43 @@ public class StuListFragment extends Fragment {
     }
 
     private void initStudents() {
-        List<File> files = getImageDirFiles();
-        for (int i = 0; i < files.size(); i++) {
-            String mPicName = files.get(i).getName();
-            File file = new File(imgDir + File.separator + mPicName);
+        Request request = new Request.Builder()
+                .url("http://110.64.90.71:8089/studentList")
+                .method("GET", null)
+                .build();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Response response = client.newCall(request).execute();
+                    Gson gson = new Gson();
+                    ResponseServer response1 = gson.fromJson(response.body().string(), ResponseServer.class);
 
-            stuList.add(new Student(mPicName.substring(0, mPicName.length()-4), file));
-        }
+                    stuList = Arrays.asList(response1.getData());
+                    Message msg = new Message();
+                    msg.what = 1;
+                    handler.sendMessage(msg);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
     }
 
+    //消息处理者,创建一个Handler的子类对象,目的是重写Handler的处理消息的方法(handleMessage())
+    @SuppressLint("HandlerLeak")
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what){
+                case 1:
+                    initRecyclerView(getView());
+                    break;
+            }
+        }
+    };
     private List<File> getImageDirFiles() {
         List<File> list = new ArrayList<>();
         File[] allFiles = imgDir.listFiles();

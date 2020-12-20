@@ -44,8 +44,8 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         Student student = mStuList.get(position);
-        Glide.with(holder.itemView).load(student.getStuImage()).into(holder.stuImage);
-        holder.stuName.setText(student.getStuName());
+        //Glide.with(holder.itemView).load(student.getStuImage()).into(holder.stuImage);
+        holder.stuName.setText(student.getName());
     }
 
     @Override
