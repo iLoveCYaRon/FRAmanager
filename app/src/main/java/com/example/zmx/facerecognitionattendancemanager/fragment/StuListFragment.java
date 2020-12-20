@@ -19,25 +19,16 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.zmx.facerecognitionattendancemanager.R;
-import com.example.zmx.facerecognitionattendancemanager.common.Constants;
-import com.example.zmx.facerecognitionattendancemanager.model.ResponseServer;
 import com.example.zmx.facerecognitionattendancemanager.model.Student;
 import com.example.zmx.facerecognitionattendancemanager.adapter.StudentAdapter;
-import com.example.zmx.facerecognitionattendancemanager.test.TestImage;
+import com.example.zmx.facerecognitionattendancemanager.util.FaceListController;
 import com.google.gson.Gson;
 
-import org.json.JSONObject;
-
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 public class StuListFragment extends Fragment {
     /**
@@ -67,7 +58,7 @@ public class StuListFragment extends Fragment {
         client = new OkHttpClient();
         gson = new Gson();
         //从云端读取学生列表
-        initStudents();
+        getStudentList();
 
         return view;
     }
@@ -88,25 +79,14 @@ public class StuListFragment extends Fragment {
 
     }
 
-    private void initStudents() {
-        Request request = new Request.Builder()
-                .url(Constants.SERVER_IP+"/studentList")
-                .method("GET", null)
-                .build();
-
+    private void getStudentList() {
         new Thread(() -> {
-            try {
-                ResponseServer response = gson.fromJson(client.newCall(request).execute().body().string(), ResponseServer.class);
-                stuList = Arrays.asList(response.getData());
-                Message msg = new Message();
-                msg.what = 1;
+            stuList = FaceListController.getStudentList();
+            if(!stuList.isEmpty()) {
+                Message msg = new Message(); msg.what = 1;
                 handler.sendMessage(msg);
-
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }).start();
-
     }
 
     //消息处理者,创建一个Handler的子类对象,目的是重写Handler的处理消息的方法(handleMessage())

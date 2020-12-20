@@ -14,5 +14,5 @@ public class Constants {
      */
     public static final int VERTICAL_OFFSET = 0;
 
-    public static final String SERVER_IP = "http://192.168.1.208:8089";
+    public static final String SERVER_IP = "http://110.64.90.72:8089";
 }

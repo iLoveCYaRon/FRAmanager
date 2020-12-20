@@ -1,6 +1,6 @@
 package com.example.zmx.facerecognitionattendancemanager.model;
 
-public class ResponseServer {
+public class ResponseStuList {
     private int code = -1;
     private String msg = "success";
 

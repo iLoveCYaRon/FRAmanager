@@ -21,6 +21,8 @@ import com.example.zmx.facerecognitionattendancemanager.adapter.StudentAdapter;
 import com.example.zmx.facerecognitionattendancemanager.model.History;
 import com.example.zmx.facerecognitionattendancemanager.adapter.HistoryAdapter;
 import com.example.zmx.facerecognitionattendancemanager.R;
+import com.example.zmx.facerecognitionattendancemanager.util.FaceListController;
+import com.example.zmx.facerecognitionattendancemanager.util.HistoryController;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -48,10 +50,8 @@ public class HistoryFragment extends Fragment {
         public void handleMessage(Message msg) {
 
             switch (msg.what) {
-                case 200:
-                    loadingCardView(msg.obj.toString());
-//                    Toast.makeText(getActivity(),
-//                            msg.obj.toString(), Toast.LENGTH_SHORT).show();
+                case 1:
+                    loadingCardView();
                     break;
                 default:
                     Toast.makeText(getActivity(),
@@ -65,11 +65,8 @@ public class HistoryFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_history, container, false);
-        //sendRequest();
 
-
-
-        historyList.add(new History("20","nm"));
+        getHistoryList();
 
         //获取RecyclerView
         RecyclerView recyclerView = view.findViewById(R.id.recycler_view);
@@ -79,7 +76,6 @@ public class HistoryFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         //设置item的分割线
         recyclerView.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
-
 
 
         return view;
@@ -96,56 +92,17 @@ public class HistoryFragment extends Fragment {
 
     }
 
-    private void sendRequest(){
-        // 发送查询请求
-        OkHttpClient client = new OkHttpClient();
-
-        Request request = new Request.Builder()
-                .url("http://72156fb1c1fcb432.natapp.cc/history")
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String data = response.body().string();
-
-                Message msg = new Message();
-                msg.what = 200;
-                msg.obj = data;
-
+    private void getHistoryList() {
+        new Thread(() -> {
+            historyList = HistoryController.getHistoryList("admin");
+            if(!historyList.isEmpty()) {
+                Message msg = new Message(); msg.what = 1;
                 handler.sendMessage(msg);
-
             }
-        });
-
-
+        }).start();
     }
 
-    private void loadingCardView(String jsonData) {
-
-//        try {
-//            JSONArray jsonArray = new JSONArray(jsonData);
-//            for (int i = 0; i < jsonArray.length(); i++) {
-//                JSONObject jsonObject = jsonArray.getJSONObject(i);
-//                History history = new History(jsonObject.getString("register_time"), jsonObject.getString("user_id"));
-//                historyList.add(history);
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-
-        //Gson解析
-        Gson gson = new Gson();
-        historyList = gson.fromJson(jsonData, new TypeToken<List<History>>() {}.getType());
-        for (History h : historyList) {
-            System.out.println(h.toString());
-        }
-
+    private void loadingCardView() {
         //设置布局
         RecyclerView recyclerView = getActivity().findViewById(R.id.recycler_view);
         GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), 2);
