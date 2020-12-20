@@ -35,7 +35,7 @@ public class FaceInfoController {
         MediaType mediaType = MediaType.parse("text/plain");
         RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("image", "data:image/jpeg;base64," + imgBase64Str)
-                .addFormDataPart("name", faceId)
+                .addFormDataPart("id", faceId)
                 .build();
 
         Request request = new Request.Builder()
