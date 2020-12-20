@@ -10,8 +10,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
 
+import androidx.annotation.RequiresApi;
 import androidx.core.content.FileProvider;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -29,6 +32,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import com.example.zmx.facerecognitionattendancemanager.faceserver.FaceServer;
+import com.example.zmx.facerecognitionattendancemanager.util.FaceInfoController;
 
 import java.io.File;
 import java.io.IOException;
@@ -148,11 +152,11 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
             switch (request_flag) {
                 case TRANSMIT:
                     inputDialog.setPositiveButton("提交",
-                            (dialog, which) -> {doSign(editText.getText().toString()); waitingDialog.show();});
+                            (dialog, which) -> {signServer(editText.getText().toString()); waitingDialog.show();});
                     break;
                 case REGISTER:
                     inputDialog.setPositiveButton("提交",
-                            (dialog, which) -> {doRegister(editText.getText().toString()); waitingDialog.show();});
+                            (dialog, which) -> {registerServer(editText.getText().toString()); waitingDialog.show();});
                     break;
             }
 
@@ -253,4 +257,66 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
         });
     }
 
+    private void registerServer(String faceId) {
+        //获取方才捕捉到的图片
+        outputImage = new File(getExternalCacheDir(), "face_check_take_photo_image.jpg");
+
+        //发起注册请求，获得结果，发送给ResultHandler
+        new Thread(new Runnable() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void run() {
+                try {
+                    String re = FaceInfoController.register(outputImage, faceId);
+                    Message msg = new Message();
+                    msg.what = 1;
+                    Bundle bundle = new Bundle(); bundle.putString("re", re);
+                    msg.setData(bundle);
+                    resultHandler.sendMessage(msg);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    private void signServer(String faceId) {
+        //获取方才捕捉到的图片
+        outputImage = new File(getExternalCacheDir(), "face_check_take_photo_image.jpg");
+
+        //发起注册请求，获得结果，发送给ResultHandler
+        new Thread(new Runnable() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void run() {
+                try {
+                    String re = FaceInfoController.sign(outputImage, faceId);
+                    Message msg = new Message();
+                    msg.what = 2;
+                    Bundle bundle = new Bundle(); bundle.putString("re", re);
+                    msg.setData(bundle);
+                    resultHandler.sendMessage(msg);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    @SuppressLint("HandlerLeak")
+    Handler resultHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case 1:
+                    //代表获取到了注册结果
+
+
+                case 2:
+                    //代表获取到了签到结果
+                    System.out.println(msg.getData().get("re"));
+            }
+        }
+    };
 }

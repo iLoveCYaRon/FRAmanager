@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.zmx.facerecognitionattendancemanager.R;
+import com.example.zmx.facerecognitionattendancemanager.common.Constants;
 import com.example.zmx.facerecognitionattendancemanager.model.ResponseServer;
 import com.example.zmx.facerecognitionattendancemanager.model.Student;
 import com.example.zmx.facerecognitionattendancemanager.adapter.StudentAdapter;
@@ -50,6 +51,8 @@ public class StuListFragment extends Fragment {
     private File imgDir;
 
     private OkHttpClient client;
+    private Gson gson;
+
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
     @Override
@@ -62,6 +65,7 @@ public class StuListFragment extends Fragment {
         }
 
         client = new OkHttpClient();
+        gson = new Gson();
         //从云端读取学生列表
         initStudents();
 
@@ -86,25 +90,20 @@ public class StuListFragment extends Fragment {
 
     private void initStudents() {
         Request request = new Request.Builder()
-                .url("http://110.64.90.71:8089/studentList")
+                .url(Constants.SERVER_IP+"/studentList")
                 .method("GET", null)
                 .build();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Response response = client.newCall(request).execute();
-                    Gson gson = new Gson();
-                    ResponseServer response1 = gson.fromJson(response.body().string(), ResponseServer.class);
 
-                    stuList = Arrays.asList(response1.getData());
-                    Message msg = new Message();
-                    msg.what = 1;
-                    handler.sendMessage(msg);
+        new Thread(() -> {
+            try {
+                ResponseServer response = gson.fromJson(client.newCall(request).execute().body().string(), ResponseServer.class);
+                stuList = Arrays.asList(response.getData());
+                Message msg = new Message();
+                msg.what = 1;
+                handler.sendMessage(msg);
 
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }).start();
 
@@ -116,23 +115,12 @@ public class StuListFragment extends Fragment {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what){
+                //从服务端接收到学生列表信息
                 case 1:
                     initRecyclerView(getView());
                     break;
             }
         }
     };
-    private List<File> getImageDirFiles() {
-        List<File> list = new ArrayList<>();
-        File[] allFiles = imgDir.listFiles();
-        if (allFiles != null) { // 若文件不为空，则遍历文件长度
-            for (File file : allFiles) {
-                if (file.isFile()) {
-                    list.add(file);
-                }
-            }
-        }
-        return list;
 
-    }
 }
