@@ -267,7 +267,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
             @Override
             public void run() {
                 try {
-                    String re = FaceInfoController.register(outputImage, faceId);
+                    String re = FaceInfoController.register2(outputImage, faceId);
                     Message msg = new Message();
                     msg.what = 1;
                     Bundle bundle = new Bundle(); bundle.putString("re", re);
@@ -290,7 +290,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
             @Override
             public void run() {
                 try {
-                    String re = FaceInfoController.sign(outputImage, faceId);
+                    String re = FaceInfoController.sign2(outputImage, faceId);
                     Message msg = new Message();
                     msg.what = 2;
                     Bundle bundle = new Bundle(); bundle.putString("re", re);
