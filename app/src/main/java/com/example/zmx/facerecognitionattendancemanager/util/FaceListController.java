@@ -1,5 +1,7 @@
 package com.example.zmx.facerecognitionattendancemanager.util;
 
+import android.util.Log;
+
 import com.example.zmx.facerecognitionattendancemanager.common.Constants;
 import com.example.zmx.facerecognitionattendancemanager.model.ResponseStuList;
 import com.example.zmx.facerecognitionattendancemanager.model.Student;

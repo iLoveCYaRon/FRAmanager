@@ -13,6 +13,7 @@ public class ImageBase64Converter {
      *
      * @param file
      */
+
     @RequiresApi(api = Build.VERSION_CODES.O)
     public static String convertFileToBase64(File file) {
         byte[] data = null;
@@ -26,6 +27,12 @@ public class ImageBase64Converter {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        // 对字节数组进行Base64编码，得到Base64编码的字符串
+        return convertByteToBase64(data);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static String convertByteToBase64(byte[] data) {
         // 对字节数组进行Base64编码，得到Base64编码的字符串
         String base64Str = Base64.getEncoder().encodeToString(data);
 

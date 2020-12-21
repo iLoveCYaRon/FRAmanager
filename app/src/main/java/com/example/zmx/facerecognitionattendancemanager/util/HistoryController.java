@@ -1,5 +1,7 @@
 package com.example.zmx.facerecognitionattendancemanager.util;
 
+import android.util.Log;
+
 import com.example.zmx.facerecognitionattendancemanager.common.Constants;
 import com.example.zmx.facerecognitionattendancemanager.model.History;
 import com.example.zmx.facerecognitionattendancemanager.model.ResponseHisList;
@@ -29,6 +31,9 @@ public class HistoryController {
                 .build();
 
         try {
+
+            Long time = System.currentTimeMillis();
+            Log.e("空载发送： " , time.toString());
             Response response = NetworkUtil.client.newCall(request).execute();
             ResponseHisList re = NetworkUtil.gson.fromJson(response.body().string(), ResponseHisList.class);
             return Arrays.asList(re.getData());

@@ -41,8 +41,6 @@ public class StuListFragment extends Fragment {
     public String ROOT_PATH;
     private File imgDir;
 
-    private OkHttpClient client;
-    private Gson gson;
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
@@ -55,8 +53,6 @@ public class StuListFragment extends Fragment {
             imgDir = new File(ROOT_PATH + File.separator + SAVE_IMG_DIR);
         }
 
-        client = new OkHttpClient();
-        gson = new Gson();
         //从云端读取学生列表
         getStudentList();
 
@@ -79,7 +75,7 @@ public class StuListFragment extends Fragment {
 
     }
 
-    private void getStudentList() {
+    public void getStudentList() {
         new Thread(() -> {
             stuList = FaceListController.getStudentList();
             if(!stuList.isEmpty()) {

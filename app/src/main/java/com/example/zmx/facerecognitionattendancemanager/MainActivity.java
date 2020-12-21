@@ -9,6 +9,8 @@ import androidx.annotation.NonNull;
 import com.example.zmx.facerecognitionattendancemanager.test.TestImage;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
+
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -256,7 +258,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         break;
                 }
 
-                startActivity(takePictureIntent);
+                startActivityForResult(takePictureIntent, 1);
 
                 break;
             default:
@@ -395,4 +397,19 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     public void onPointerCaptureChanged(boolean hasCapture) {
 
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == 1 && resultCode == RESULT_OK) {
+            //刷新界面
+            Fragment fragment = fragments.get(currentIndex);
+            if (fragment instanceof HistoryFragment) {
+                ((HistoryFragment)fragment).getHistoryList();
+            } else {
+                ((StuListFragment)fragment).getStudentList();
+            }
+        }
+    }
+
 }

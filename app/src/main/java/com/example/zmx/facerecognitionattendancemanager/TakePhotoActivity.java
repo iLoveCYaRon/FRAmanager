@@ -267,7 +267,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
             @Override
             public void run() {
                 try {
-                    String re = FaceInfoController.register2(outputImage, faceId);
+                    String re = FaceInfoController.register(outputImage, faceId);
                     Message msg = new Message();
                     msg.what = 1;
                     Bundle bundle = new Bundle(); bundle.putString("re", re);
@@ -290,7 +290,7 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
             @Override
             public void run() {
                 try {
-                    String re = FaceInfoController.sign2(outputImage, faceId);
+                    String re = FaceInfoController.sign(outputImage, faceId);
                     Message msg = new Message();
                     msg.what = 2;
                     Bundle bundle = new Bundle(); bundle.putString("re", re);
@@ -311,11 +311,20 @@ public class TakePhotoActivity extends AppCompatActivity implements View.OnClick
             switch (msg.what) {
                 case 1:
                     //代表获取到了注册结果
-
-
+                    runOnUiThread(() -> Toast.makeText(getApplicationContext(), "注册成功", Toast.LENGTH_SHORT).show());
+                    runOnUiThread(() -> waitingDialog.dismiss());
+                    setResult(RESULT_OK);
+                    System.out.println(msg.getData().get("re"));
+                    finish();
+                    break;
                 case 2:
                     //代表获取到了签到结果
+                    runOnUiThread(() -> Toast.makeText(getApplicationContext(), "签到成功", Toast.LENGTH_SHORT).show());
+                    runOnUiThread(() -> waitingDialog.dismiss());
+                    setResult(RESULT_OK);
                     System.out.println(msg.getData().get("re"));
+                    finish();
+
             }
         }
     };

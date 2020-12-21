@@ -92,7 +92,7 @@ public class HistoryFragment extends Fragment {
 
     }
 
-    private void getHistoryList() {
+    public void getHistoryList() {
         new Thread(() -> {
             historyList = HistoryController.getHistoryList("admin");
             if(!historyList.isEmpty()) {
